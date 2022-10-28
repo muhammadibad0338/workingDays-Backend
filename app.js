@@ -3,6 +3,7 @@ const app = express()
 const mongoose = require('mongoose')
 const morgan = require('morgan')
 const cors = require('cors')
+const checkAuth = require('./api/midleware/checkAuth')
 require('dotenv/config')
 
 
@@ -16,7 +17,7 @@ app.use(express.json())
 app.use(cors('*'))
 
 const mongodbURL = process.env.DB_URL
-console.log(mongodbURL,"mongodbURl")
+// console.log(mongodbURL,"mongodbURl")
 mongoose.connect(mongodbURL,
     { useUnifiedTopology: true, useNewUrlParser: true }).then(() => console.log('connected'));
 
@@ -25,6 +26,11 @@ app.listen(port, () => {
     console.log(`Server starts at ${port}`)
 })
 
+
+// check that user is authorized or not
+// console.log('auht')
+// app.use(checkAuth())
+// console.log('auht after')
 
 
 // error handling
