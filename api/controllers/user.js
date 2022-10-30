@@ -19,7 +19,7 @@ exports.registerUser = (req, res, next) => {
                     bcrypt.hash(req.body.password, 10, (err, hash) => {
                         if (err) {
                             return res.status(400).json({
-                                message: 'Request Fail Hash',
+                                message: 'Request Fail',
                                 error: err
                             })
                         }
@@ -71,3 +71,60 @@ exports.registerUser = (req, res, next) => {
     }
 }
 
+exports.login = (req, res, next) => {
+    try {
+        const secret = process.env.secret
+
+        User.find({ email: req.body.email })
+            .exec()
+            .then(user => {
+                if (user.length < 1) {
+                    return res.status(401).json({
+                        message: 'User not found'
+                    })
+                }
+                else {
+                    bcrypt.compare(req.body.password, user[0].password, async (err, result) => {
+                        if (err) {
+                            return res.status(500).json({
+                                message: 'Auth Failed'
+                            })
+                        }
+                        if (result) {
+                            const token = jwt.sign(
+                                {
+                                    email: req.body.email,
+                                    password: req.body.password
+                                },
+                                secret,
+                                {
+                                    expiresIn: '1d'
+                                }
+                            )
+                            const data = await User.findOne({ email: req.body.email })
+                            return res.status(200).json({
+                                message: 'User Login Sucessfully',
+                                token: token,
+                                user: data
+                            })
+                        }
+                        res.status(401).json({
+                            message: 'Auth Failed'
+                        })
+                    })
+                }
+            })
+            .catch(err => {
+                console.log(err)
+                res.status(500).json({
+                    error: err
+                })
+            })
+    }
+    catch (err) {
+        res.status(500).json({
+            message: 'Request Fail',
+            error: err
+        })
+    }
+}
