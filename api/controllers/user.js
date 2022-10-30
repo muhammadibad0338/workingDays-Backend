@@ -128,3 +128,25 @@ exports.login = (req, res, next) => {
         })
     }
 }
+
+exports.userDetails = async (req, res, next) => {
+    try {
+        // console.log(req.params.id, "id")
+        const user = await User.findById(req.params.id)
+        if (!user) {
+            res.status(404).send({
+                message: 'user Not Found'
+            })
+        }
+        res.status('200').json({
+            message:'User Found',
+            user
+        })
+    }
+    catch (err) {
+        res.status(500).json({
+            message: 'Request Fail',
+            error: err
+        })
+    }
+}
