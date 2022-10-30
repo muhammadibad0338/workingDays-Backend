@@ -20,7 +20,7 @@ const userSchema = new mongoose.Schema({
         type: Number,
         required: false
     },
-    Role: {
+    role: {
         type: String,
         required: true
     },
@@ -30,7 +30,7 @@ const userSchema = new mongoose.Schema({
     },
     profilePicture: {
         type: String,
-        reduired: false
+        default:'https://firebasestorage.googleapis.com/v0/b/facebook-clone-40392.appspot.com/o/images%2FpersonIcon.png?alt=media&token=d7a62fe5-83a5-4934-8c06-a6fa97223f49'
     },
     
 }, { timestamps: true })

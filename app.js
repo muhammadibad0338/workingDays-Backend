@@ -5,7 +5,7 @@ const morgan = require('morgan')
 const cors = require('cors')
 const checkAuth = require('./api/midleware/checkAuth')
 require('dotenv/config')
-
+const userRoutes = require('./api/routes/user')
 
 
 
@@ -25,6 +25,10 @@ mongoose.connect(mongodbURL,
 app.listen(port, () => {
     console.log(`Server starts at ${port}`)
 })
+
+
+//Routes 
+app.use('/auth',userRoutes)
 
 
 // check that user is authorized or not
