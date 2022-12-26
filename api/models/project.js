@@ -11,6 +11,10 @@ const projectSchema = new mongoose.Schema({
         require: false,
 
     },
+    icon:{
+        type:String,
+        require: true
+    },
     // employees: {
     //     type: Array,
     //     default: []
