@@ -2,12 +2,22 @@ const mongoose = require('mongoose');
 const Project = require('../models/project')
 const User = require('../models/user')
 
-exports.allProjects = async (req, res, next) => {
+exports.userProjects = async (req, res, next) => {
     try {
-        // const userId = req.params.id
-        res.status(200).json({
-            name: "Muhammad Ibad"
+        const userId = req.params.id
+        // console.log(userId,"userID")
+        Project.find({employees:{$in: userId } }).populate('employees').exec((err,docs) =>{
+            if(err)
+            {
+                res.status(500).send(err)
+            }
+            else{
+                res.status(200).json({
+                    projects: docs
+                })
+            }
         })
+        
 
     }
     catch (err) {
