@@ -1,10 +1,11 @@
 const mongoose = require('mongoose');
 const User = require('../models/user')
+const Team = require('../models/team')
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
 
-exports.registerUser = (req, res, next) => {
+exports.registerUser =  (req, res, next) => {
     try {
         const secret = process.env.secret;
         User.find({ email: req.body.email })
@@ -33,8 +34,19 @@ exports.registerUser = (req, res, next) => {
                                 role: req.body.role,
                                 description: req.body.description,
                             })
+
                             createUser.save()
-                                .then(result => {
+                                .then( async(result) => {
+                                    if (result.role === "softwareCompany") {
+                                        const createTeam = new Team({
+                                            _id: new mongoose.Types.ObjectId,
+                                            name: req.body.name,
+                                            email: req.body.email,
+                                            teamMembers: [result._id],
+                                            teamOwner: result
+                                        })
+                                        const team = await createTeam.save()
+                                    }
                                     const token = jwt.sign(
                                         {
                                             email: req.body.email,
@@ -57,7 +69,6 @@ exports.registerUser = (req, res, next) => {
                                         error: err
                                     })
                                 })
-
                         }
                     })
                 }
@@ -139,7 +150,7 @@ exports.userDetails = async (req, res, next) => {
             })
         }
         res.status('200').json({
-            message:'User Found',
+            message: 'User Found',
             user
         })
     }
