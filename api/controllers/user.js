@@ -5,7 +5,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
 
-exports.registerUser =  (req, res, next) => {
+exports.registerUser = (req, res, next) => {
     try {
         const secret = process.env.secret;
         User.find({ email: req.body.email })
@@ -36,7 +36,7 @@ exports.registerUser =  (req, res, next) => {
                             })
 
                             createUser.save()
-                                .then( async(result) => {
+                                .then(async (result) => {
                                     if (result.role === "softwareCompany") {
                                         const createTeam = new Team({
                                             _id: new mongoose.Types.ObjectId,
@@ -157,6 +157,25 @@ exports.userDetails = async (req, res, next) => {
     catch (err) {
         res.status(500).json({
             message: 'Request Fail',
+            error: err
+        })
+    }
+}
+
+exports.searchUser = async = (req, res, next) => {
+    try {
+        const key = req.params.key;
+
+        User.find({ $or: [{ name: { $regex: key, $options: 'i' } }, { email: { $regex: key, $options: 'i' } }] }, (error, users) => {
+            if (error) {
+                res.status(500).send(error);
+            } else {
+                res.send(users);
+            }
+        });
+    } catch (err) {
+        res.status(500).json({
+            message: 'Search Request Fail',
             error: err
         })
     }
