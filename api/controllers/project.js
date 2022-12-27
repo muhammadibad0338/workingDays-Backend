@@ -50,7 +50,7 @@ exports.createProject = async (req, res, next) => {
                     name: req.body.name,
                     description: req.body.description,
                     icon:req.body.icon,
-                    employees: [],
+                    employees: [userId],
                     projectOwner: req.body.user
                 })
                 createProject.save()
