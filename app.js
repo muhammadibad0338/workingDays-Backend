@@ -7,6 +7,7 @@ const checkAuth = require('./api/midleware/checkAuth')
 require('dotenv/config')
 const userRoutes = require('./api/routes/user')
 const projectRoutes = require('./api/routes/project')
+const requestRoutes = require('./api/routes/request')
 
 
 const port = process.env.PORT || 8000
@@ -30,6 +31,7 @@ app.listen(port, () => {
 //Routes 
 app.use('/auth',userRoutes)
 app.use('/project',projectRoutes)
+app.use('/request',requestRoutes)
 
 // check that user is authorized or not
 // console.log('auht')
