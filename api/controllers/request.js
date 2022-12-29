@@ -51,3 +51,59 @@ exports.sendRequest = async (req, res, next) => {
         })
     }
 }
+
+
+exports.getUserRequests = async (req, res, next) => {
+    try {
+        const userId = req.params.id
+        Request.find({ $or: [{ employee: userId }, { softwareCompany: userId }] })
+            .exec()
+            .then((requests) => {
+                if (requests.length < 1) {
+                    res.status(401).json({
+                        message: 'Request not Found'
+                    })
+                }
+                else {
+                    res.status(200).json({
+                        requests: requests
+                    })
+                }
+            })
+    }
+    catch (err) {
+        res.status(200).json({
+            message: 'Request Failed',
+            error: err
+        })
+    }
+}
+
+// exports.updateRequestStatus = async (req, res, next) => {
+//     try {
+//         const userId = req.body.userId
+//         const requestId = req.body.requestId
+//         const requestStatus = req.body.status
+
+//         const employee = await User.findById(userId)
+
+//         if (employee.role !== "Employee") {
+//             return res.status(500).send({
+//                 message: 'User are not permit to perfome such Request Action'
+//             })
+//         }
+//         else {
+//             if (requestStatus.toLowerCase() === "accepted") {
+
+//             }
+//         }
+
+
+//     }
+//     catch (err) {
+//         res.status(200).json({
+//             message: 'Request Failed',
+//             error: err
+//         })
+//     }
+// }
