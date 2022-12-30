@@ -6,18 +6,17 @@ exports.userProjects = async (req, res, next) => {
     try {
         const userId = req.params.id
         // console.log(userId,"userID")
-        Project.find({employees:{$in: userId } }).populate('employees').exec((err,docs) =>{
-            if(err)
-            {
+        Project.find({ projectTeam: { $in: userId } }).populate('projectTeam').exec((err, docs) => {
+            if (err) {
                 res.status(500).send(err)
             }
-            else{
+            else {
                 res.status(200).json({
                     projects: docs
                 })
             }
         })
-        
+
 
     }
     catch (err) {
@@ -49,8 +48,8 @@ exports.createProject = async (req, res, next) => {
                     _id: new mongoose.Types.ObjectId,
                     name: req.body.name,
                     description: req.body.description,
-                    icon:req.body.icon,
-                    employees: [userId],
+                    icon: req.body.icon,
+                    projectTeam: [userId],
                     projectOwner: req.body.user
                 })
                 createProject.save()
@@ -77,6 +76,31 @@ exports.createProject = async (req, res, next) => {
         res.status(500).json({
             message: 'Something Went Wrong while creating project',
             err
+        })
+    }
+}
+
+exports.projectDetails = async (req, res, next) => {
+    try {
+        const userId = req.params.id
+        const project = await Project.findById(userId).populate('projectTeam').exec()
+
+        if(!project)
+        {
+            res.status(404).send({
+                message:'Project Not Found'
+            })
+        }
+        else{
+            res.status(200).json({
+                project:project
+            })
+        }
+    }
+    catch (err) {
+        res.status(200).json({
+            message: 'Request Failed',
+            error: err
         })
     }
 }

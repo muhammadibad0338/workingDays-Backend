@@ -19,7 +19,7 @@ const projectSchema = new mongoose.Schema({
     //     type: Array,
     //     default: []
     // },
-    employees: [
+    projectTeam: [
         {
             type: mongoose.Schema.Types.ObjectId,
             ref: 'User',
