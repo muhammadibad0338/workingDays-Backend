@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const Request = require('../models/request');
 const User = require('../models/user')
+const Team = require('../models/team')
 
 exports.sendRequest = async (req, res, next) => {
     try {
@@ -28,7 +29,7 @@ exports.sendRequest = async (req, res, next) => {
                 _id: new mongoose.Types.ObjectId,
                 employee: employeeId,
                 softwareCompany: softwareCompanyId,
-                staus: 'Pending'
+                status: 'Pending'
             })
 
             createRequest.save().then(result => {
@@ -79,31 +80,113 @@ exports.getUserRequests = async (req, res, next) => {
     }
 }
 
-// exports.updateRequestStatus = async (req, res, next) => {
-//     try {
-//         const userId = req.body.userId
-//         const requestId = req.body.requestId
-//         const requestStatus = req.body.status
+exports.updateRequestStatus = async (req, res, next) => {
+    try {
+        const userId = req.body.employee
+        const requestId = req.params.id
+        const requestStatus = req.body.status
+        const softwareCompany = req.body.softwareCompany
 
-//         const employee = await User.findById(userId)
+        const employee = await User.findById(userId)
 
-//         if (employee.role !== "Employee") {
-//             return res.status(500).send({
-//                 message: 'User are not permit to perfome such Request Action'
-//             })
-//         }
-//         else {
-//             if (requestStatus.toLowerCase() === "accepted") {
+        if (employee.role !== "Employee") {
+            return res.status(500).send({
+                message: 'User are not permit to perfome such Request Action'
+            })
+        }
+        else {
+            if (requestStatus.toLowerCase() === "accepted") {
+                Team.find({ teamMembers: { $in: userId } }).populate('teamMembers').exec(async (err, docs) => {
+                    if (err) {
+                        res.status(500).send(err)
+                    }
+                    else {
+                        // console.log(docs, "docs")
+                        if (docs.length > 0) {
+                            return res.status(500).send({
+                                message: 'User is Already in another Team'
+                            })
+                        }
+                        else {
 
-//             }
-//         }
 
+                            Request.findByIdAndUpdate(
+                                requestId, {
+                                status: requestStatus
+                            },
+                                {
+                                    new: true
+                                },
+                                (err, requestRes) => {
+                                    if (err) {
+                                        console.log(err);
+                                        res.status(500).json({
+                                            message: 'Request Failed',
+                                            error: err
+                                        })
+                                    } else {
+                                        Team.updateOne({ teamOwner: softwareCompany }, { $push: { teamMembers: userId } }, (teamErr, teamRes) => {
+                                            if (teamErr) {
+                                                res.status(500).json({
+                                                    message: 'Request Failed',
+                                                    error: teamErr
+                                                })
+                                            }
+                                            else {
+                                                res.status(200).json({
+                                                    message: 'Request Accepted',
+                                                    request: requestRes,
+                                                    team: teamRes
+                                                })
+                                            }
+                                        })
 
-//     }
-//     catch (err) {
-//         res.status(200).json({
-//             message: 'Request Failed',
-//             error: err
-//         })
-//     }
-// }
+                                    }
+                                }
+                            )
+
+                        }
+                    }
+                })
+
+            }
+            else if (requestStatus.toLowerCase() === "rejected") {
+                Request.findByIdAndUpdate(
+                    requestId, {
+                    status: requestStatus
+                },
+                    {
+                        new: true
+                    },
+                    (err, requestRes) => {
+                        if (err) {
+                            console.log(err);
+                            res.status(500).json({
+                                message: 'Request Failed',
+                                error: err
+                            })
+                        } else {
+                            res.status(200).json({
+                                message: 'Request Rejected',
+                                request: requestRes,
+                            })
+
+                        }
+                    }
+                )
+
+            }
+            else{
+                res.status(500).send({
+                    message:'Request Status not Correct'
+                })
+            }
+        }
+    }
+    catch (err) {
+        res.status(500).json({
+            message: 'Request Failed',
+            error: err
+        })
+    }
+}

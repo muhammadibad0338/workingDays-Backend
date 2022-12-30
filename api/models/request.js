@@ -12,7 +12,7 @@ const requestSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User'
     },
-    staus: {
+    status: {
         type: String,
         require: true
     }
