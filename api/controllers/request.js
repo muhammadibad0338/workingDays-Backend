@@ -119,7 +119,7 @@ exports.updateRequestStatus = async (req, res, next) => {
                                 },
                                 (err, requestRes) => {
                                     if (err) {
-                                        console.log(err);
+                                        // console.log(err);
                                         res.status(500).json({
                                             message: 'Request Failed',
                                             error: err

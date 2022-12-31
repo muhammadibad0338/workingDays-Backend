@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const Project = require('../models/project')
 const User = require('../models/user')
+const Team = require('../models/team')
 
 exports.userProjects = async (req, res, next) => {
     try {
@@ -85,21 +86,78 @@ exports.projectDetails = async (req, res, next) => {
         const userId = req.params.id
         const project = await Project.findById(userId).populate('projectTeam').exec()
 
-        if(!project)
-        {
+        if (!project) {
             res.status(404).send({
-                message:'Project Not Found'
+                message: 'Project Not Found'
             })
         }
-        else{
+        else {
             res.status(200).json({
-                project:project
+                project: project
             })
         }
     }
     catch (err) {
         res.status(200).json({
             message: 'Request Failed',
+            error: err
+        })
+    }
+}
+
+exports.addMemberToProject = async (req, res, next) => {
+    try {
+        const projectId = req.body.projectId
+        const userId = req.body.id
+        const softwareCompany = req.body.softwareCompany
+
+        const isTeamMember = await Team.findOne({ $and: [{ teamOwner: softwareCompany }, { teamMembers: { $in: [userId] } }] })
+
+        if (isTeamMember) {
+            const isProjectMember = await Project.find({ $and: [{ _id: projectId }, { projectTeam: { $in: [userId] } }] })
+
+            if (isProjectMember.length > 0) {
+                res.status(500).json({
+                    message: `Employee is Already in ${isProjectMember[0]?.name}  Project`,
+                    // isProjectMember
+                })
+            }
+            else {
+                Project.findByIdAndUpdate(
+                    projectId, {
+                    $push: { projectTeam: userId }
+                },
+                    {
+                        new: true
+                    }, (err, projectUpdateRes) => {
+                        if (err) {
+                            res.status(500).json({
+                                message: 'Request Failed',
+                                error: err
+                            })
+                        }
+                        else {
+                            res.status(200).json({
+                                message: 'Employee Added to Project',
+                                project: projectUpdateRes
+                            })
+                        }
+                    }
+                )
+            }
+        }
+        else {
+            res.status(500).json({
+                message: 'User is not in your Software Company'
+            })
+        }
+
+
+
+    }
+    catch (err) {
+        res.status(500).json({
+            message: 'Auth Failed',
             error: err
         })
     }
