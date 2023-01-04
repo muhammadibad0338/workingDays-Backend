@@ -10,7 +10,8 @@ exports.sendRequest = async (req, res, next) => {
 
         const employee = await User.findById(employeeId)
         const softwareCompany = await User.findById(softwareCompanyId)
-        const isAlreadyRequestExists = await Request.find({ $and: [{ employee: employeeId }, { softwareCompany: softwareCompanyId }] })
+        const isAlreadyRequestExists = await Request.find({ $and: [{ employee: employeeId }, { softwareCompany: softwareCompanyId }, { status: "Pending" }] })
+        const isAlreadyInAnotherTeam = await Team.find({ teamMembers: { $in: employeeId } })
 
         if (employee.role !== "Employee" || softwareCompany.role !== "softwareCompany") {
             return res.status(500).send({
@@ -20,6 +21,12 @@ exports.sendRequest = async (req, res, next) => {
         else if (isAlreadyRequestExists.length > 0) {
             return res.status(500).send({
                 message: 'request has already send'
+            })
+        }
+        else if(isAlreadyInAnotherTeam.length > 0) 
+        {
+            return res.status(500).send({
+                message: 'User is already in Another Team'
             })
         }
         else {
@@ -57,7 +64,7 @@ exports.sendRequest = async (req, res, next) => {
 exports.getUserRequests = async (req, res, next) => {
     try {
         const userId = req.params.id
-        Request.find({ $or: [{ employee: userId }, { softwareCompany: userId }] })
+        Request.find({ $or: [{ employee: userId }, { softwareCompany: userId }] }).populate('employee').populate('softwareCompany')
             .exec()
             .then((requests) => {
                 if (requests.length < 1) {
@@ -133,11 +140,29 @@ exports.updateRequestStatus = async (req, res, next) => {
                                                 })
                                             }
                                             else {
-                                                res.status(200).json({
-                                                    message: 'Request Accepted',
-                                                    request: requestRes,
-                                                    team: teamRes
-                                                })
+                                                User.findByIdAndUpdate(
+                                                    userId, {
+                                                    joinedSoftwareCompany: softwareCompany
+                                                },
+                                                    {
+                                                        new: true
+                                                    }, (userUpdateErr, userUpdateRes) => {
+                                                        if (userUpdateErr) {
+                                                            res.status(500).json({
+                                                                message: 'Request Failed',
+                                                                error: userUpdateErr
+                                                            })
+                                                        }
+                                                        else {
+                                                            res.status(200).json({
+                                                                message: 'Request Accepted',
+                                                                request: requestRes,
+                                                                team: teamRes
+                                                            })
+                                                        }
+                                                    }
+                                                )
+
                                             }
                                         })
 
@@ -176,9 +201,9 @@ exports.updateRequestStatus = async (req, res, next) => {
                 )
 
             }
-            else{
+            else {
                 res.status(500).send({
-                    message:'Request Status not Correct'
+                    message: 'Request Status not Correct'
                 })
             }
         }

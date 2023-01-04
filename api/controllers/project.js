@@ -84,7 +84,7 @@ exports.createProject = async (req, res, next) => {
 exports.projectDetails = async (req, res, next) => {
     try {
         const userId = req.params.id
-        const project = await Project.findById(userId).populate('projectTeam').exec()
+        const project = await Project.findById(userId).populate('projectTeam').populate('projectOwner').exec()
 
         if (!project) {
             res.status(404).send({
