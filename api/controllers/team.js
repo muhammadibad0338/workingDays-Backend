@@ -31,12 +31,14 @@ exports.userTeam = async (req, res, next) => {
 exports.searchUserInTeam = async = (req, res, next) => {
     try {
         const key = req.params.key;
-        const softwareCompany = req.body.softwareCompany
+        const softwareCompany = req.params.id
+        console.log(key,"key",softwareCompany)
 
         User.find({ $and: [{ joinedSoftwareCompany: softwareCompany }, { role: "Employee" }, { $or: [{ name: { $regex: key, $options: 'i' } }, { email: { $regex: key, $options: 'i' } }] }] }, (error, users) => {
             if (error) {
                 res.status(500).send(error);
             } else {
+                
                 res.send(users);
             }
         });
