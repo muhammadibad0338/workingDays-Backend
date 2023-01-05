@@ -9,7 +9,7 @@ const userRoutes = require('./api/routes/user')
 const projectRoutes = require('./api/routes/project')
 const requestRoutes = require('./api/routes/request')
 const teamRoutes = require('./api/routes/Team')
-
+const taskRoutes = require('./api/routes/task')
 
 const port = process.env.PORT || 8000
 
@@ -34,6 +34,7 @@ app.use('/auth',userRoutes)
 app.use('/project',projectRoutes)
 app.use('/request',requestRoutes)
 app.use('/team',teamRoutes)
+app.use('/task',taskRoutes)
 
 
 // check that user is authorized or not
