@@ -1,0 +1,52 @@
+const mongoose = require('mongoose')
+
+
+const taskSchema = new mongoose.Schema({
+    _id: mongoose.Schema.Types.ObjectId,
+    name: {
+        type: String,
+        require: true
+    },
+    description: {
+        type: String,
+        require: true
+    },
+    agileCycle: {
+        type: String,
+        require: true
+    },
+    employee: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+    },
+    softwareCompany: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+    },
+    project: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Project'
+    },
+    deadlineStart: {
+        type: Date,
+        required: true,
+        validate: function (value) {
+            return value >= new Date()
+        }
+    },
+    deadlineEnd: {
+        type: Date,
+        require: true,
+        validate: function (value) {
+            return value > this.deadlineStart;
+        },
+    },
+    deadlineExtend: {
+        type: Date,
+        required: true,
+        default: new Date(0),
+    }
+
+}, { timestamps: true })
+
+module.exports = mongoose.model('Request', taskSchema)
