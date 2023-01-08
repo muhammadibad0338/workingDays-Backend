@@ -9,10 +9,7 @@ exports.createTask = async (req, res, next) => {
         const employeeId = req.body.employee;
         const softwareCompanyId = req.body.softwareCompany
         const projectId = req.body.project
-
         const now = new Date();
-
-
 
         const softwareCompany = await User.findById(softwareCompanyId)
 
@@ -79,12 +76,7 @@ exports.createTask = async (req, res, next) => {
                         error: err
                     })
                 })
-
-
             }
-
-
-
         }
         else {
             return res.status(500).send({
@@ -100,6 +92,11 @@ exports.createTask = async (req, res, next) => {
         })
     }
 }
+
+
+
+
+
 
 exports.getProjectTask = async (req, res, next) => {
     try {
@@ -126,13 +123,17 @@ exports.getProjectTask = async (req, res, next) => {
     }
 }
 
+
+
+
+
 exports.updateTaskAgileCycle = async (req, res, next) => {
     try {
         const id = req.params.id;
         const agileCycle = req.body.agileCycle
 
         const taskDetails = await Task.find({ _id: id , employee:req.body.employee })
-        
+
         if (taskDetails.length > 0) {
             Task.findByIdAndUpdate(
                 id, {
@@ -155,7 +156,6 @@ exports.updateTaskAgileCycle = async (req, res, next) => {
                     }
                 }
             )
-
         }
         else {
             res.status(500).json({
