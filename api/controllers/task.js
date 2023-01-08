@@ -132,7 +132,7 @@ exports.updateTaskAgileCycle = async (req, res, next) => {
         const id = req.params.id;
         const agileCycle = req.body.agileCycle
 
-        const taskDetails = await Task.find({ _id: id , employee:req.body.employee })
+        const taskDetails = await Task.find({ _id: id, employee: req.body.employee })
 
         if (taskDetails.length > 0) {
             Task.findByIdAndUpdate(
@@ -156,6 +156,112 @@ exports.updateTaskAgileCycle = async (req, res, next) => {
                     }
                 }
             )
+        }
+        else {
+            res.status(500).json({
+                message: `User are not permit to perfome such Action`
+            })
+        }
+    }
+    catch (err) {
+        res.status(500).json({
+            message: 'Request Failed',
+            error: err
+        })
+    }
+}
+
+
+exports.updateTaskDetails = async (req, res, next) => {
+    try {
+        const id = req.params.id;
+        const name = req.body.name;
+        const description = req.body.description
+
+        const taskDetails = await Task.find({ _id: id, softwareCompany: req.body.softwareCompany })
+
+        if (taskDetails.length > 0) {
+            Task.findByIdAndUpdate(
+                id, {
+                name: name,
+                description: description
+            },
+                {
+                    new: true
+                }, (taskUpdateErr, taskUpdateRes) => {
+                    if (taskUpdateErr) {
+                        res.status(500).json({
+                            message: 'Request Failed',
+                            error: taskUpdateErr
+                        })
+                    }
+                    else {
+                        res.status(200).json({
+                            message: `Task updated`,
+                            task: taskUpdateRes
+                        })
+                    }
+                }
+            )
+        }
+        else {
+            res.status(500).json({
+                message: `User are not permit to perfome such Action`
+            })
+        }
+    }
+    catch (err) {
+        res.status(500).json({
+            message: 'Request Failed',
+            error: err
+        })
+    }
+}
+
+exports.updateTaskAssignEmployee = async (req, res, next) => {
+    try {
+        const id = req.params.id;
+        const employeeId = req.body.employee;
+        const softwareCompanyId = req.body.softwareCompany
+        const projectId = req.body.project
+
+        const taskDetails = await Task.find({ _id: id, softwareCompany: softwareCompanyId })
+
+        if (taskDetails.length > 0) {
+            const isProjectMember = await Project.find({ $and: [{ _id: projectId }, { projectTeam: { $in: [employeeId] } }] })
+
+            if (isProjectMember.length > 0) {
+
+                Task.findByIdAndUpdate(
+                    id, {
+                    employee: employeeId
+                },
+                    {
+                        new: true
+                    }, (taskUpdateErr, taskUpdateRes) => {
+                        if (taskUpdateErr) {
+                            res.status(500).json({
+                                message: 'Request Failed',
+                                error: taskUpdateErr
+                            })
+                        }
+                        else {
+                            res.status(200).json({
+                                message: `Task Assign updated`,
+                                task: taskUpdateRes
+                            })
+                        }
+                    }
+                )
+
+            }
+            else {
+                res.status(500).json({
+                    message: 'User is not in you Project Team'
+                })
+            }
+
+
         }
         else {
             res.status(500).json({
