@@ -17,7 +17,8 @@ const taskSchema = new mongoose.Schema({
     },
     employee: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'User'
+        ref: 'User',
+        require: false
     },
     softwareCompany: {
         type: mongoose.Schema.Types.ObjectId,
@@ -43,10 +44,10 @@ const taskSchema = new mongoose.Schema({
     },
     deadlineExtend: {
         type: Date,
-        required: true,
+        require: false,
         default: new Date(0),
     }
 
 }, { timestamps: true })
 
-module.exports = mongoose.model('Request', taskSchema)
+module.exports = mongoose.model('Task', taskSchema)
