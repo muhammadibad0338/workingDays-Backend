@@ -100,3 +100,28 @@ exports.createTask = async (req, res, next) => {
         })
     }
 }
+
+exports.getProjectTask = async (req, res, next) => {
+    try {
+        id = req.params.id
+
+        const tasks = await Task.find({ project: id })
+
+        if (!tasks) {
+            res.status(404).send({
+                message: 'Tasks Not Found',
+            })
+        }
+        else {
+            res.status(200).json({
+                tasks: tasks
+            })
+        }
+    }
+    catch (err) {
+        res.status(500).json({
+            message: 'Request Failed',
+            error: err
+        })
+    }
+}
