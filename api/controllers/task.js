@@ -125,3 +125,48 @@ exports.getProjectTask = async (req, res, next) => {
         })
     }
 }
+
+exports.updateTaskAgileCycle = async (req, res, next) => {
+    try {
+        const id = req.params.id;
+        const agileCycle = req.body.agileCycle
+
+        const taskDetails = await Task.find({ _id: id , employee:req.body.employee })
+        
+        if (taskDetails.length > 0) {
+            Task.findByIdAndUpdate(
+                id, {
+                agileCycle: agileCycle
+            },
+                {
+                    new: true
+                }, (taskUpdateErr, taskUpdateRes) => {
+                    if (taskUpdateErr) {
+                        res.status(500).json({
+                            message: 'Request Failed',
+                            error: taskUpdateErr
+                        })
+                    }
+                    else {
+                        res.status(200).json({
+                            message: `Task Status changed to ${agileCycle}`,
+                            task: taskUpdateRes
+                        })
+                    }
+                }
+            )
+
+        }
+        else {
+            res.status(500).json({
+                message: `User are not permit to perfome such Action`
+            })
+        }
+    }
+    catch (err) {
+        res.status(500).json({
+            message: 'Request Failed',
+            error: err
+        })
+    }
+}
