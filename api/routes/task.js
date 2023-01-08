@@ -7,6 +7,7 @@ router.get('/currentProjectTaks/:id',taskController.getProjectTask)
 router.put('/updateTaskAgileCycle/:id',taskController.updateTaskAgileCycle)
 router.put('/updateTaskDetails/:id',taskController.updateTaskDetails)
 router.put('/updateTaskAssginEmployee/:id',taskController.updateTaskAssignEmployee)
+router.delete('/deleteTask/:id',taskController.deleteTask)
 
 
 

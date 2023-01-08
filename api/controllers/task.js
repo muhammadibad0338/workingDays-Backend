@@ -276,3 +276,28 @@ exports.updateTaskAssignEmployee = async (req, res, next) => {
         })
     }
 }
+
+exports.deleteTask = async (req, res, next) => {
+    try {
+
+        Task.findByIdAndRemove(req.params.id).then(task => {
+            if (task) {
+                return res.status(200).json({
+                    success: true,
+                    message: 'task deleted successfully'
+                })
+            } else {
+                return res.status(404).json({ success: false, message: "task not found" })
+            }
+        })
+            .catch(err => {
+                return res.status(400).json({ success: false, error: err })
+            })
+    }
+    catch (err) {
+        res.status(500).json({
+            message: 'Request Failed',
+            error: err
+        })
+    }
+}
