@@ -102,7 +102,7 @@ exports.getProjectTask = async (req, res, next) => {
     try {
         id = req.params.id
 
-        const tasks = await Task.find({ project: id })
+        const tasks = await Task.find({ project: id }).populate('employee')
 
         if (!tasks) {
             res.status(404).send({
@@ -132,9 +132,9 @@ exports.updateTaskAgileCycle = async (req, res, next) => {
         const id = req.params.id;
         const agileCycle = req.body.agileCycle
 
-        const taskDetails = await Task.find({ _id: id, employee: req.body.employee })
+        // const taskDetails = await Task.find({ _id: id, $or: [{ employee: req.body.employee }, { softwareCompany: req.body.employee }] })
 
-        if (taskDetails.length > 0) {
+        // if (taskDetails.length > 0) {
             Task.findByIdAndUpdate(
                 id, {
                 agileCycle: agileCycle
@@ -156,12 +156,12 @@ exports.updateTaskAgileCycle = async (req, res, next) => {
                     }
                 }
             )
-        }
-        else {
-            res.status(500).json({
-                message: `User are not permit to perfome such Action`
-            })
-        }
+        // }
+        // else {
+        //     res.status(500).json({
+        //         message: `User are not permit to perfome such Action`
+        //     })
+        // }
     }
     catch (err) {
         res.status(500).json({
