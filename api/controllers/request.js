@@ -69,7 +69,9 @@ exports.getUserRequests = async (req, res, next) => {
             .then((requests) => {
                 if (requests.length < 1) {
                     res.status(401).json({
-                        message: 'Request not Found'
+                        message: 'Request not Found',
+                        // requests: []
+
                     })
                 }
                 else {
