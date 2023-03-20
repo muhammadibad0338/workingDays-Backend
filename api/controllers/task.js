@@ -4,6 +4,8 @@ const User = require('../models/user')
 const Project = require('../models/project')
 const Task = require('../models/task')
 
+const { sendTaskCreateEmail } = require("../utilities/TaksUtils")
+
 exports.createTask = async (req, res, next) => {
     try {
         const employeeId = req.body.employee;
@@ -18,6 +20,7 @@ exports.createTask = async (req, res, next) => {
 
             if (employeeId) {
                 //create task with assigning it to employee
+                const taskAssigner = await User.findById(employeeId)
                 const isProjectMember = await Project.find({ $and: [{ _id: projectId }, { projectTeam: { $in: [employeeId] } }] })
                 if (isProjectMember.length > 0) {
 
@@ -29,9 +32,20 @@ exports.createTask = async (req, res, next) => {
                         employee: employeeId,
                         softwareCompany: softwareCompanyId,
                         project: projectId,
-                        deadlineStart: new Date(now.setDate(now.getDate() + 1)),
-                        deadlineEnd: new Date(now.setDate(now.getDate() + 2)),
+                        deadlineStart: req.body.deadlineStart,
+                        deadlineEnd: req.body.deadlineEnd
+                        // deadlineStart: new Date(now.setDate(now.getDate() + 1)),
+                        // deadlineEnd: new Date(now.setDate(now.getDate() + 2)),
                     })
+                    let username = taskAssigner.name
+                    let email = taskAssigner.email
+                    let isEmailSent = await sendTaskCreateEmail({ email, username, projectId })
+                    if (!isEmailSent) {
+                        return res.status(500).json({
+                            success: false,
+                            message: "Failed to send email."
+                        })
+                    }
 
                     createTask.save().then(result => {
                         res.status(200).json({
@@ -102,7 +116,7 @@ exports.getProjectTask = async (req, res, next) => {
     try {
         id = req.params.id
 
-        const tasks = await Task.find({ project: id }).populate('employee')
+        const tasks = await Task.find({ project: id }).populate('employee').populate('softwareCompany')
 
         if (!tasks) {
             res.status(404).send({
@@ -135,27 +149,27 @@ exports.updateTaskAgileCycle = async (req, res, next) => {
         // const taskDetails = await Task.find({ _id: id, $or: [{ employee: req.body.employee }, { softwareCompany: req.body.employee }] })
 
         // if (taskDetails.length > 0) {
-            Task.findByIdAndUpdate(
-                id, {
-                agileCycle: agileCycle
-            },
-                {
-                    new: true
-                }, (taskUpdateErr, taskUpdateRes) => {
-                    if (taskUpdateErr) {
-                        res.status(500).json({
-                            message: 'Request Failed',
-                            error: taskUpdateErr
-                        })
-                    }
-                    else {
-                        res.status(200).json({
-                            message: `Task Status changed to ${agileCycle}`,
-                            task: taskUpdateRes
-                        })
-                    }
+        Task.findByIdAndUpdate(
+            id, {
+            agileCycle: agileCycle
+        },
+            {
+                new: true
+            }, (taskUpdateErr, taskUpdateRes) => {
+                if (taskUpdateErr) {
+                    res.status(500).json({
+                        message: 'Request Failed',
+                        error: taskUpdateErr
+                    })
                 }
-            )
+                else {
+                    res.status(200).json({
+                        message: `Task Status changed to ${agileCycle}`,
+                        task: taskUpdateRes
+                    })
+                }
+            }
+        )
         // }
         // else {
         //     res.status(500).json({

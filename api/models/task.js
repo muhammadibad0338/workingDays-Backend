@@ -30,22 +30,24 @@ const taskSchema = new mongoose.Schema({
     },
     deadlineStart: {
         type: Date,
-        required: true,
-        validate: function (value) {
-            return value >= new Date()
-        }
+        require: false
+        // require: true,
+        // validate: function (value) {
+        //     return value >= new Date()
+        // }
     },
     deadlineEnd: {
         type: Date,
-        require: true,
-        validate: function (value) {
-            return value > this.deadlineStart;
-        },
+        require: false
+        // require: true,
+        // validate: function (value) {
+        //     return value > this.deadlineStart;
+        // },
     },
     deadlineExtend: {
         type: Date,
         require: false,
-        default: new Date(0),
+        // default: new Date(0),
     }
 
 }, { timestamps: true })
