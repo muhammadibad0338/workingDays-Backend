@@ -24,25 +24,34 @@ const userSchema = new mongoose.Schema({
         type: String,
         required: true
     },
-    description:{
+    description: {
         type: String,
         reduired: false
     },
     profilePicture: {
         type: String,
-        default:'https://firebasestorage.googleapis.com/v0/b/facebook-clone-40392.appspot.com/o/images%2FpersonIcon.png?alt=media&token=d7a62fe5-83a5-4934-8c06-a6fa97223f49'
+        default: 'https://firebasestorage.googleapis.com/v0/b/facebook-clone-40392.appspot.com/o/images%2FpersonIcon.png?alt=media&token=d7a62fe5-83a5-4934-8c06-a6fa97223f49'
     },
-    joinedSoftwareCompany:{
+    joinedSoftwareCompany: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
-        required:false
+        required: false
+    },
+    jobDescription: [
+        {
+            title: { type: String, required: false },
+            AppointedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: false },
+            company: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: false },
+            startDate: { type: Date, required: false },
+            endDate: { type: Date, required: false },
+            level: { type: Number, required: false }
+        }
+    ],
+    level: {
+        type: Number,
+        required: false
     }
-    // projects:{
-    //     type: Array,
-    //     default:[],
-    //     required:false
-    // }
-    
+
 }, { timestamps: true })
 
-module.exports = mongoose.model('User',userSchema)
+module.exports = mongoose.model('User', userSchema)

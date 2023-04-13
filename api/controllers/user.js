@@ -33,6 +33,7 @@ exports.registerUser = (req, res, next) => {
                                 phoneNumber: req.body.phoneNumber,
                                 role: req.body.role,
                                 description: req.body.description,
+                                level: req.body.role === "softwareCompany" ? 0 : null
                             })
 
                             createUser.save()
@@ -175,6 +176,114 @@ exports.searchUser = async = (req, res, next) => {
         });
     } catch (err) {
         res.status(500).json({
+            message: 'Search Request Fail',
+            error: err
+        })
+    }
+}
+
+
+exports.changeJobDesignation = async (req, res, next) => {
+    try {
+        const level = req.body.level;
+        const employee = req.body.employee;
+        const employeer = req.body.employeer
+        const title = req.body.title
+        joinedSoftwareCompany = req.body.joinedSoftwareCompany
+
+
+        console.log(req.body, "reqBody")
+        const now = new Date();
+
+        let jobTitleByLevel = {
+            '1': 'executive',
+            '2': 'manager',
+            '3': 'teamLead',
+            '4': 'juniorDeveloper',
+            '5': 'intern'
+        }
+
+        let newJobDescription = {
+            title: title,
+            AppointedBy: employeer,
+            company: joinedSoftwareCompany,
+            startDate: now,
+            level: level
+        }
+
+
+        const team = await Team.findOne({ teamMembers: { $all: [employee, employeer] } });
+        // return !!team
+
+        if (!!team) {
+
+            const employeeLevel = await User.findOne({ _id: employee }).select('level');
+            const employeerLevel = await User.findOne({ _id: employeer }).select('level');
+
+            if (level === 0) {
+                res.status(200).json({
+                    status: true,
+                    message: 'Company is alreday Registered'
+                })
+            }
+            if (![0, 1, 2].includes(employeerLevel.level)) {
+                res.status(200).json({
+                    status: true,
+                    message: 'Permission Denied '
+                })
+            }
+            if (employeerLevel.level >= employeeLevel.level) {
+                res.status(200).json({
+                    status: true,
+                    message: 'Permission Denied '
+                })
+            }
+
+
+            User.findByIdAndUpdate(
+                employee, {
+                // joinedSoftwareCompany: company,
+                $push: { jobDescription: newJobDescription },
+                level: level
+            },
+                {
+                    new: true
+                }, (userUpdateErr, userUpdateRes) => {
+                    if (userUpdateErr) {
+                        res.status(500).json({
+                            message: 'Request Failed',
+                            error: userUpdateErr
+                        })
+                    }
+                    else {
+                        res.status(200).json({
+                            message: 'Designation Changed',
+                            employee: userUpdateRes,
+                        })
+                    }
+                }
+            )
+
+
+            // res.status(200).json({
+            //     status: true,
+            //     message: 'on the Same Team',
+            //     employeeLevel: employeeLevel.level,
+            //     employeerLevel: !!employeerLevel.level
+            // })
+        }
+        else {
+            res.status(200).json({
+                status: true,
+                message: 'Not on the Same Team'
+            })
+        }
+
+
+    } catch (err) {
+        console.log(err, "changeJobDesignation error")
+        res.status(500).json({
+            status: false,
             message: 'Search Request Fail',
             error: err
         })

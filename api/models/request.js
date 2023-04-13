@@ -15,7 +15,16 @@ const requestSchema = new mongoose.Schema({
     status: {
         type: String,
         require: true
-    }
+    },
+    jobDescription: [
+        {
+            title: { type: String, required: false },
+            AppointedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: false },
+            startDate: { type: Date, required: false },
+            endDate: { type: Date, required: false },
+            level: { type: Number, required: false }
+        }
+    ]
 }, { timestamps: true })
 
 module.exports = mongoose.model('Request', requestSchema)

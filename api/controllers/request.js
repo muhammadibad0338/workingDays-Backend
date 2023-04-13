@@ -13,6 +13,8 @@ exports.sendRequest = async (req, res, next) => {
         const isAlreadyRequestExists = await Request.find({ $and: [{ employee: employeeId }, { softwareCompany: softwareCompanyId }, { status: "Pending" }] })
         const isAlreadyInAnotherTeam = await Team.find({ teamMembers: { $in: employeeId } })
 
+        const now = new Date();
+
         if (employee.role !== "Employee" || softwareCompany.role !== "softwareCompany") {
             return res.status(500).send({
                 message: 'User are not permit to perfome send Request Action'
@@ -23,20 +25,27 @@ exports.sendRequest = async (req, res, next) => {
                 message: 'request has already send'
             })
         }
-        else if(isAlreadyInAnotherTeam.length > 0) 
-        {
+        else if (isAlreadyInAnotherTeam.length > 0) {
             return res.status(500).send({
                 message: 'User is already in Another Team'
             })
         }
         else {
 
+            const newJobDescription = {
+                title: req.body.title,
+                AppointedBy: req.body.AppointedBy,
+                startDate: now,
+                level: req.body.level,
+                company: req.body.company
+            };
 
             const createRequest = new Request({
                 _id: new mongoose.Types.ObjectId,
                 employee: employeeId,
                 softwareCompany: softwareCompanyId,
-                status: 'Pending'
+                status: 'Pending',
+                jobDescription: [newJobDescription]
             })
 
             createRequest.save().then(result => {
@@ -142,9 +151,13 @@ exports.updateRequestStatus = async (req, res, next) => {
                                                 })
                                             }
                                             else {
+                                                console.log(requestRes, "requestRes")
+
                                                 User.findByIdAndUpdate(
                                                     userId, {
-                                                    joinedSoftwareCompany: softwareCompany
+                                                    joinedSoftwareCompany: softwareCompany,
+                                                    $push: { jobDescription: requestRes.jobDescription[0] },
+                                                    level: requestRes.jobDescription[0].level
                                                 },
                                                     {
                                                         new: true
