@@ -30,7 +30,12 @@ const projectSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
         require: true
-    }
+    },
+    createdBy :{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        require: true
+    },
 
 }, { timestamps: true })
 

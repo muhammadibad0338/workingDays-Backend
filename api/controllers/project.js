@@ -39,19 +39,17 @@ exports.createProject = async (req, res, next) => {
             })
         }
         else {
-            if (user.role === "employee") {
-                res.status(500).send({
-                    message: "Only Software Company can create Project"
-                })
-            }
-            else {
+            
+            if( [0,1,2].includes(user.level) )
+            {
                 const createProject = new Project({
                     _id: new mongoose.Types.ObjectId,
                     name: req.body.name,
                     description: req.body.description,
                     icon: req.body.icon,
-                    projectTeam: [userId],
-                    projectOwner: req.body.user
+                    projectTeam: user.role === "softwareCompany" ? [userId] : [userId,user.joinedSoftwareCompany] ,
+                    projectOwner:  user.role === "softwareCompany" ? userId : user.joinedSoftwareCompany,
+                    createdBy: userId,
                 })
                 createProject.save()
                     .then(result => {
@@ -65,6 +63,11 @@ exports.createProject = async (req, res, next) => {
                             error: err
                         })
                     })
+            }
+            else{
+                res.status(500).send({
+                    message: "Not Authorized Rights"
+                })
             }
         }
 
@@ -109,9 +112,19 @@ exports.addMemberToProject = async (req, res, next) => {
     try {
         const projectId = req.body.projectId
         const userId = req.body.id
-        const softwareCompany = req.body.softwareCompany
+        const softwareCompanyId = req.body.softwareCompany
 
-        const isTeamMember = await Team.findOne({ $and: [{ teamOwner: softwareCompany }, { teamMembers: { $in: [userId] } }] })
+        const user = await User.findById(userId)
+        const softwareCompany = await User.findById(softwareCompanyId)
+        const isTeamMember = await Team.findOne({ $and: [{ teamOwner: softwareCompanyId }, { teamMembers: { $in: [userId] } }] })
+
+        if( ![ 0,1,2].includes(softwareCompany.level) )
+        {
+            return res.status(400).json({
+                status: true,
+                message: 'Not Authorized Rights',
+            })
+        }
 
         if (isTeamMember) {
             const isProjectMember = await Project.find({ $and: [{ _id: projectId }, { projectTeam: { $in: [userId] } }] })

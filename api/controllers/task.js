@@ -10,13 +10,23 @@ exports.createTask = async (req, res, next) => {
     try {
         const employeeId = req.body.employee;
         const softwareCompanyId = req.body.softwareCompany
+        const createdByID = req.body.createdBy
         const projectId = req.body.project
         const now = new Date();
 
         const softwareCompany = await User.findById(softwareCompanyId)
+        const employee = await User.findById(employeeId)
+        const createdBy = await User.findById(createdByID)
 
 
-        if (softwareCompany.role === "softwareCompany") {
+        if ([0, 1, 2, 3].includes(createdBy.level)) {
+
+            if (createdBy.level >=  employee.level) {
+                return res.status(400).json({
+                    status: true,
+                    message: 'You can not assing task above you upper level',
+                })
+            }
 
             if (employeeId) {
                 //create task with assigning it to employee
@@ -33,7 +43,8 @@ exports.createTask = async (req, res, next) => {
                         softwareCompany: softwareCompanyId,
                         project: projectId,
                         deadlineStart: req.body.deadlineStart,
-                        deadlineEnd: req.body.deadlineEnd
+                        deadlineEnd: req.body.deadlineEnd,
+                        createdBy: createdByID
                         // deadlineStart: new Date(now.setDate(now.getDate() + 1)),
                         // deadlineEnd: new Date(now.setDate(now.getDate() + 2)),
                     })
@@ -77,6 +88,7 @@ exports.createTask = async (req, res, next) => {
                     project: projectId,
                     deadlineStart: new Date(now.setDate(now.getDate() + 1)),
                     deadlineEnd: new Date(now.setDate(now.getDate() + 2)),
+                    createdBy: createdByID
                 })
 
                 createTaskWithoutAssigning.save().then(result => {
@@ -116,7 +128,7 @@ exports.getProjectTask = async (req, res, next) => {
     try {
         id = req.params.id
 
-        const tasks = await Task.find({ project: id }).populate('employee').populate('softwareCompany')
+        const tasks = await Task.find({ project: id }).populate('employee').populate('softwareCompany').sort({ createdAt: -1 })
 
         if (!tasks) {
             res.status(404).send({
