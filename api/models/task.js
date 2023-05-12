@@ -31,25 +31,25 @@ const taskSchema = new mongoose.Schema({
     deadlineStart: {
         type: Date,
         require: false
-        // require: true,
-        // validate: function (value) {
-        //     return value >= new Date()
-        // }
     },
     deadlineEnd: {
         type: Date,
         require: false
-        // require: true,
-        // validate: function (value) {
-        //     return value > this.deadlineStart;
-        // },
     },
     deadlineExtend: {
         type: Date,
         require: false,
         // default: new Date(0),
     },
-    createdBy :{
+    dependUpon: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Task'
+    }],
+    isCompleted: {
+        ref: Boolean,
+        default: false
+    },
+    createdBy: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
     },
