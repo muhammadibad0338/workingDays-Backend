@@ -9,6 +9,7 @@ router.put('/updateTaskDetails/:id', taskController.updateTaskDetails)
 router.put('/updateTaskAssginEmployee/:id', taskController.updateTaskAssignEmployee)
 router.put('/addTaskDependency/:id', taskController.addTaskDependency)
 router.put('/replaceTaskDependency/:id', taskController.replaceTaskDependency)
+router.delete('/deleteTaskDependency/:id', taskController.deleteTaskDependency)
 router.delete('/deleteTask/:id', taskController.deleteTask)
 
 

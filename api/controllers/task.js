@@ -455,3 +455,38 @@ exports.replaceTaskDependency = async (req, res, next) => {
         })
     }
 }
+
+
+exports.deleteTaskDependency = async (req, res, next) => {
+    try {
+        const taskId = req.params.id;
+        const deleteTaskRefs = req.body.deleteTaskRefs;
+
+
+        Task.findOneAndUpdate(
+            { _id: taskId, dependUpon: deleteTaskRefs },
+            { $pull: { dependUpon: deleteTaskRefs } },
+            { new: true }
+        )
+            .then((updatedTask) => {
+                if (!updatedTask) {
+                    return res.status(404).json({ success: false, error: 'Task not found or deleting Task is not in dependUpon array' });
+                }
+                res.status(200).json({
+                    success: true,
+                    message: `Removed ${deleteTaskRefs} from dependUpon array of task ${updatedTask._id}.`,
+                    task: updatedTask
+                });
+            })
+            .catch((error) => {
+                return res.status(400).json({ success: false, error: `Error updating document: ${error.message}` })
+            });
+    }
+    catch (err) {
+        res.status(500).json({
+            success: false,
+            message: 'Request Failed',
+            error: err
+        })
+    }
+}
