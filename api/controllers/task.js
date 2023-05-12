@@ -4,7 +4,7 @@ const User = require('../models/user')
 const Project = require('../models/project')
 const Task = require('../models/task')
 
-const { sendTaskCreateEmail } = require("../utilities/TaksUtils")
+const { sendTaskCreateEmail, areTasksInSameProject, checkDependUpon } = require("../utilities/TaksUtils")
 
 exports.createTask = async (req, res, next) => {
     try {
@@ -21,7 +21,7 @@ exports.createTask = async (req, res, next) => {
 
         if ([0, 1, 2, 3].includes(createdBy.level)) {
 
-            if (createdBy.level >=  employee.level) {
+            if (createdBy.level >= employee.level) {
                 return res.status(400).json({
                     status: true,
                     message: 'You can not assing task above you upper level',
@@ -161,9 +161,13 @@ exports.updateTaskAgileCycle = async (req, res, next) => {
         // const taskDetails = await Task.find({ _id: id, $or: [{ employee: req.body.employee }, { softwareCompany: req.body.employee }] })
 
         // if (taskDetails.length > 0) {
+
+        const isCompleted = agileCycle.toLowerCase() === "deploy" || agileCycle.toLowerCase() === "maintenance"
+
         Task.findByIdAndUpdate(
             id, {
-            agileCycle: agileCycle
+            agileCycle: agileCycle,
+            isCompleted
         },
             {
                 new: true
@@ -322,6 +326,130 @@ exports.deleteTask = async (req, res, next) => {
     }
     catch (err) {
         res.status(500).json({
+            message: 'Request Failed',
+            error: err
+        })
+    }
+}
+
+
+exports.addTaskDependency = async (req, res, next) => {
+    try {
+        const taskId = req.params.id;
+        const newTaskRefs = req.body.taskRefs;
+
+        const isCheckDependUpon = await checkDependUpon(taskId, newTaskRefs)
+
+        if (newTaskRefs.length === 0) {
+            return res.status(500).json({
+                success: false,
+                message: "No Task Found"
+            })
+        }
+
+        if (!isCheckDependUpon.status) {
+            return res.status(500).json({
+                success: false,
+                message: isCheckDependUpon.message
+            })
+        }
+
+        Task.updateOne(
+            { _id: taskId },
+            { $addToSet: { dependUpon: { $each: newTaskRefs } } }
+        )
+            .then((result) => {
+                res.status(200).json({
+                    success: true,
+                    message: `Updated ${result.nModified} document(s).`
+                })
+            })
+            .catch((error) => {
+                return res.status(400).json({ success: false, error: `Error updating document: ${error?.message}` })
+            });
+
+    }
+    catch (err) {
+        res.status(500).json({
+            success: false,
+            message: 'Request Failed',
+            error: err
+        })
+    }
+}
+
+
+exports.replaceTaskDependency = async (req, res, next) => {
+    try {
+        const taskId = req.params.id;
+        // Kis ko add krna ha  ===> replaceToTaskRefs
+        const replaceToTaskRefs = req.body.replaceToTaskRefs;
+        // kis ko nikal na ha    ====> replaceFromTaskRefs
+        const replaceFromTaskRefs = req.body.replaceFromTaskRefs;
+
+        const isCheckDependUpon = await checkDependUpon(taskId, [replaceToTaskRefs])
+
+
+
+        if (!isCheckDependUpon.status) {
+            return res.status(500).json({
+                success: false,
+                message: isCheckDependUpon.message
+            })
+        }
+
+        Task.findOne({
+            _id: taskId,
+            dependUpon: { $in: [replaceFromTaskRefs] }
+        })
+            .then((task) => {
+
+                if (task) {
+                    if (!task.dependUpon.includes(replaceToTaskRefs)) {
+
+
+
+                        Task.updateOne(
+                            { _id: taskId, dependUpon: replaceFromTaskRefs },
+                            { $set: { 'dependUpon.$': replaceToTaskRefs } }
+                        )
+                            .then((result) => {
+                                res.status(200).json({
+                                    success: true,
+                                    message: `Updated ${result.nModified} document(s).`
+                                })
+                            })
+                            .catch((error) => {
+                                return res.status(500).json({
+                                    success: false,
+                                    message: `Error updating document: ${error.message}`
+                                })
+                            });
+                    }
+                    else {
+                        return res.status(500).json({
+                            success: false,
+                            message: `Task ${replaceToTaskRefs} is already present in the dependUpon array.`
+                        })
+                    }
+                } else {
+                    return res.status(400).json({
+                        success: false,
+                        message: `Task ${taskId} does not have ${taskRef1} in its dependUpon array.`
+                    })
+                }
+            })
+            .catch((error) => {
+                return res.status(400).json({
+                    success: false,
+                    message: `Error finding document: ${error.message}`
+                })
+            })
+
+    }
+    catch (err) {
+        res.status(500).json({
+            success: false,
             message: 'Request Failed',
             error: err
         })
