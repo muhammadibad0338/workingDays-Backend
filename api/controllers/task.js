@@ -361,7 +361,7 @@ exports.addTaskDependency = async (req, res, next) => {
             .then((result) => {
                 res.status(200).json({
                     success: true,
-                    message: `Updated ${result.nModified} document(s).`
+                    message: `Updated ${taskId} document(s).`
                 })
             })
             .catch((error) => {
