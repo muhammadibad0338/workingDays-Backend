@@ -2,6 +2,8 @@ const mongoose = require('mongoose');
 const Project = require('../models/project')
 const User = require('../models/user')
 const Team = require('../models/team')
+const Task = require('../models/task')
+
 
 exports.userProjects = async (req, res, next) => {
     try {
@@ -39,16 +41,15 @@ exports.createProject = async (req, res, next) => {
             })
         }
         else {
-            
-            if( [0,1,2].includes(user.level) )
-            {
+
+            if ([0, 1, 2].includes(user.level)) {
                 const createProject = new Project({
                     _id: new mongoose.Types.ObjectId,
                     name: req.body.name,
                     description: req.body.description,
                     icon: req.body.icon,
-                    projectTeam: user.role === "softwareCompany" ? [userId] : [userId,user.joinedSoftwareCompany] ,
-                    projectOwner:  user.role === "softwareCompany" ? userId : user.joinedSoftwareCompany,
+                    projectTeam: user.role === "softwareCompany" ? [userId] : [userId, user.joinedSoftwareCompany],
+                    projectOwner: user.role === "softwareCompany" ? userId : user.joinedSoftwareCompany,
                     createdBy: userId,
                 })
                 createProject.save()
@@ -64,7 +65,7 @@ exports.createProject = async (req, res, next) => {
                         })
                     })
             }
-            else{
+            else {
                 res.status(500).send({
                     message: "Not Authorized Rights"
                 })
@@ -118,8 +119,7 @@ exports.addMemberToProject = async (req, res, next) => {
         const softwareCompany = await User.findById(softwareCompanyId)
         const isTeamMember = await Team.findOne({ $and: [{ teamOwner: softwareCompanyId }, { teamMembers: { $in: [userId] } }] })
 
-        if( ![ 0,1,2].includes(softwareCompany.level) )
-        {
+        if (![0, 1, 2].includes(softwareCompany.level)) {
             return res.status(400).json({
                 status: true,
                 message: 'Not Authorized Rights',
@@ -175,3 +175,4 @@ exports.addMemberToProject = async (req, res, next) => {
         })
     }
 }
+

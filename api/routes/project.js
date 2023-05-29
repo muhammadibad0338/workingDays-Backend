@@ -7,4 +7,5 @@ router.post('/',projectController.createProject)
 router.get('/projectDetails/:id',projectController.projectDetails)
 router.put('/addEmployeeToProject',projectController.addMemberToProject)
 
+
 module.exports = router;

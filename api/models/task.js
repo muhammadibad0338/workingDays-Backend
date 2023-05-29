@@ -46,7 +46,7 @@ const taskSchema = new mongoose.Schema({
         ref: 'Task'
     }],
     isCompleted: {
-        ref: Boolean,
+        type: Boolean,
         default: false
     },
     createdBy: {

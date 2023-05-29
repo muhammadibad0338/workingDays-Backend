@@ -5,6 +5,7 @@ const Project = require('../models/project')
 const Task = require('../models/task')
 
 const { sendTaskCreateEmail, areTasksInSameProject, checkDependUpon } = require("../utilities/TaksUtils")
+const { createTaskReport, updateTaskReport } = require("../utilities/TaskReportUtils")
 
 exports.createTask = async (req, res, next) => {
     try {
@@ -44,7 +45,9 @@ exports.createTask = async (req, res, next) => {
                         project: projectId,
                         deadlineStart: req.body.deadlineStart,
                         deadlineEnd: req.body.deadlineEnd,
-                        createdBy: createdByID
+                        createdBy: createdByID,
+                        isCompleted: req.body.agileCycle.toLowerCase() === "deploy" || req.body.agileCycle.toLowerCase() === "maintenance"
+
                         // deadlineStart: new Date(now.setDate(now.getDate() + 1)),
                         // deadlineEnd: new Date(now.setDate(now.getDate() + 2)),
                     })
@@ -58,11 +61,51 @@ exports.createTask = async (req, res, next) => {
                         })
                     }
 
-                    createTask.save().then(result => {
-                        res.status(200).json({
-                            message: 'Task Created Sucessfully',
-                            Task: result
-                        })
+                    createTask.save().then(async (result) => {
+
+                        let createTaskReportPayload = {
+                            taskId: result._id,
+                            updates: [
+                                {
+                                    name: result.name,
+                                    description: result.description,
+                                    agileCycle: result.agileCycle,
+                                    employee: result.employee,
+                                    deadlineStart: result.deadlineStart,
+                                    deadlineEnd: result.deadlineEnd,
+                                    dependUpon: result.dependUpon,
+                                    isCompleted: req.body.agileCycle.toLowerCase() === "deploy" || req.body.agileCycle.toLowerCase() === "maintenance"
+                                }
+                            ],
+                            project: result.project
+                        }
+
+                        let isCreateTaskReport = await createTaskReport(createTaskReportPayload)
+                        if (isCreateTaskReport.status) {
+
+                            res.status(200).json({
+                                message: 'Task Created Sucessfully',
+                                Task: result,
+                                TaskReport: isCreateTaskReport.taskReport
+                            })
+                        }
+                        else {
+                            Task.findByIdAndRemove(result._id).then(task => {
+                                if (task) {
+                                    return res.status(500).json({
+                                        success: false,
+                                        message: "Failed to Create Task Report",
+                                    })
+                                } else {
+                                    return res.status(500).json({
+                                        success: false,
+                                        message: "Failed to Create Task Report"
+                                    })
+                                }
+                            })
+
+                        }
+
                     }).catch(err => {
                         res.status(500).json({
                             message: 'Request Fail',
@@ -73,6 +116,7 @@ exports.createTask = async (req, res, next) => {
                 }
                 else {
                     res.status(500).json({
+                        status: false,
                         message: 'User is not in you Project Team'
                     })
                 }
@@ -86,18 +130,62 @@ exports.createTask = async (req, res, next) => {
                     agileCycle: req.body.agileCycle,
                     softwareCompany: softwareCompanyId,
                     project: projectId,
-                    deadlineStart: new Date(now.setDate(now.getDate() + 1)),
-                    deadlineEnd: new Date(now.setDate(now.getDate() + 2)),
+                    deadlineEnd: result.deadlineEnd,
+                    dependUpon: result.dependUpon,
+                    isCompleted: req.body.agileCycle.toLowerCase() === "deploy" || req.body.agileCycle.toLowerCase() === "maintenance",
                     createdBy: createdByID
                 })
 
-                createTaskWithoutAssigning.save().then(result => {
-                    res.status(200).json({
-                        message: 'Task Created Sucessfully',
-                        Task: result
-                    })
+                createTaskWithoutAssigning.save().then(async (result) => {
+
+                    let createTaskReportPayloadWithoutEmployee = {
+                        taskId: result._id,
+                        updates: [
+                            {
+                                name: result.name,
+                                description: result.description,
+                                agileCycle: result.agileCycle,
+                                deadlineStart: result.deadlineStart,
+                                deadlineEnd: result.deadlineEnd,
+                                dependUpon: result.dependUpon,
+                                isCompleted: req.body.agileCycle.toLowerCase() === "deploy" || req.body.agileCycle.toLowerCase() === "maintenance",
+                            }
+                        ],
+                        project: result.project
+
+                    }
+
+                    let isCreateTaskReport = await createTaskReport(createTaskReportPayloadWithoutEmployee)
+                    if (isCreateTaskReport.status) {
+
+                        res.status(200).json({
+                            message: 'Task Created Sucessfully',
+                            Task: result,
+                            TaskReport: isCreateTaskReport.taskReport
+                        })
+                    }
+                    else {
+                        Task.findByIdAndRemove(result._id).then(task => {
+                            if (task) {
+                                return res.status(500).json({
+                                    success: false,
+                                    message: "Failed to Create Task Report",
+                                })
+                            } else {
+                                return res.status(500).json({
+                                    success: false,
+                                    message: "Failed to Create Task Report"
+                                })
+                            }
+                        })
+
+                    }
+
+
+
                 }).catch(err => {
                     res.status(500).json({
+                        status: false,
                         message: 'Request Fail',
                         error: err
                     })
@@ -106,6 +194,7 @@ exports.createTask = async (req, res, next) => {
         }
         else {
             return res.status(500).send({
+                status: false,
                 message: 'User are not permit to perfome Create Task Action'
             })
         }
@@ -113,6 +202,7 @@ exports.createTask = async (req, res, next) => {
     }
     catch (err) {
         res.status(500).json({
+            status: false,
             message: 'REquest Failed',
             error: err
         })
@@ -164,34 +254,61 @@ exports.updateTaskAgileCycle = async (req, res, next) => {
 
         const isCompleted = agileCycle.toLowerCase() === "deploy" || agileCycle.toLowerCase() === "maintenance"
 
-        Task.findByIdAndUpdate(
-            id, {
+        const { _id, name, description, employee, deadlineStart, deadlineEnd, dependUpon } = await Task.findById(id)
+        if (!_id) {
+            res.status(404).json({
+                status: false,
+                message: `Task Not Found`,
+            })
+        }
+        let updateTaskCredentials = {
+            name,
+            description,
+            employee,
+            deadlineStart,
+            deadlineEnd,
+            dependUpon,
             agileCycle: agileCycle,
             isCompleted
-        },
-            {
-                new: true
-            }, (taskUpdateErr, taskUpdateRes) => {
-                if (taskUpdateErr) {
-                    res.status(500).json({
-                        message: 'Request Failed',
-                        error: taskUpdateErr
-                    })
+        }
+
+        console.log(_id, updateTaskCredentials, "taskCredentials")
+        let isUpdateTaskReport = await updateTaskReport({ taskId: id, updateTaskCredentials })
+        if (isUpdateTaskReport.status) {
+
+
+
+            Task.findByIdAndUpdate(
+                id, {
+                agileCycle: agileCycle,
+                isCompleted
+            },
+                {
+                    new: true
+                }, (taskUpdateErr, taskUpdateRes) => {
+                    if (taskUpdateErr) {
+                        res.status(500).json({
+                            message: 'Request Failed',
+                            error: taskUpdateErr
+                        })
+                    }
+                    else {
+                        res.status(200).json({
+                            message: `Task Status changed to ${agileCycle}`,
+                            task: taskUpdateRes,
+                            taskReports: isUpdateTaskReport
+                        })
+                    }
                 }
-                else {
-                    res.status(200).json({
-                        message: `Task Status changed to ${agileCycle}`,
-                        task: taskUpdateRes
-                    })
-                }
-            }
-        )
-        // }
-        // else {
-        //     res.status(500).json({
-        //         message: `User are not permit to perfome such Action`
-        //     })
-        // }
+            )
+        }
+        else {
+            res.status(500).json({
+                success: false,
+                message: "Failed to Update Task Report",
+            })
+        }
+        console.log(isUpdateTaskReport, "isUpdateTaskReport")
     }
     catch (err) {
         res.status(500).json({
@@ -486,6 +603,62 @@ exports.deleteTaskDependency = async (req, res, next) => {
         res.status(500).json({
             success: false,
             message: 'Request Failed',
+            error: err
+        })
+    }
+}
+
+
+exports.getProjectTaskTree = async (req, res, next) => {
+    try {
+
+        let id = req.params.id
+
+        const nodes = await Task.find({ project: id })
+            .select('_id name')
+            .lean();
+
+        const tasks = await Task.find({ project: id })
+            .select('_id  dependUpon')
+            .lean();
+
+
+        // Calculating nodes
+        const modifiedTasks = nodes.map((task) => {
+            return {
+                id: task._id,
+                label: task.name,
+            };
+        });
+
+        // Calculating Edges of every node by dependUpon array
+        let transformedEdges = tasks.flatMap(edge => {
+            if (!edge.dependUpon || edge.dependUpon.length === 0) {
+                return []; // Skip objects with empty dependUpon array
+            }
+
+            return edge.dependUpon.map(dependency => ({
+                from: dependency,
+                to: edge._id
+            }));
+        });
+
+        if (!nodes || !tasks) {
+            res.status(404).send({
+                message: 'Tasks Not Found',
+            });
+        } else {
+            res.status(200).json({
+                nodes: modifiedTasks,
+                edges: transformedEdges
+            });
+        }
+
+    }
+    catch (err) {
+        res.status(500).json({
+            success: false,
+            message: 'Auth Failed',
             error: err
         })
     }
