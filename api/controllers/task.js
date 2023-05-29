@@ -220,14 +220,27 @@ exports.getProjectTask = async (req, res, next) => {
 
         const tasks = await Task.find({ project: id }).populate('employee').populate('softwareCompany').sort({ createdAt: -1 })
 
-        if (!tasks) {
+        const completeTasks = await Task.find({
+            project: id,
+            $or: [{ agileCycle: 'Deploy' }, { agileCycle: 'Maintenance' }]
+        }).populate('employee').populate('softwareCompany').sort({ createdAt: -1 });
+
+        const IncompleteTask = await Task.find({
+            project: id,
+            agileCycle: { $nin: ['Deploy', 'Maintenance'] }
+        }).populate('employee').populate('softwareCompany').sort({ createdAt: -1 });
+
+
+        if (!tasks || !completeTasks  || !IncompleteTask) {
             res.status(404).send({
                 message: 'Tasks Not Found',
             })
         }
         else {
             res.status(200).json({
-                tasks: tasks
+                tasks: tasks,
+                completeTasks,
+                IncompleteTask
             })
         }
     }
