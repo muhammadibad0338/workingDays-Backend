@@ -267,13 +267,15 @@ exports.updateTaskAgileCycle = async (req, res, next) => {
 
         const isCompleted = agileCycle.toLowerCase() === "deploy" || agileCycle.toLowerCase() === "maintenance"
 
-        const { _id, name, description, employee, deadlineStart, deadlineEnd, dependUpon } = await Task.findById(id)
-        if (!_id) {
+        const task = await Task.findById(id)
+        if (!task) {
             res.status(404).json({
                 status: false,
                 message: `Task Not Found`,
             })
         }
+        let { _id, name, description, employee, deadlineStart, deadlineEnd, dependUpon } = task
+
         let updateTaskCredentials = {
             name,
             description,
