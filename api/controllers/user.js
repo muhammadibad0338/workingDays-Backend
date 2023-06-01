@@ -150,7 +150,7 @@ exports.userDetails = async (req, res, next) => {
                 message: 'user Not Found'
             })
         }
-        res.status('200').json({
+        res.status(200).json({
             message: 'User Found',
             user
         })

@@ -33,7 +33,7 @@ const createTaskReport = async ({ taskId, updates, project }) => {
 
 const updateTaskReport = async ({taskId, updateTaskCredentials}) => {
     try {
-        console.log(taskId, updateTaskCredentials,"updateTaskCredentials")
+        // console.log(taskId, updateTaskCredentials,"updateTaskCredentials")
         const taskReport = await TaskReport.findOne({ taskId });
 
         if (!taskReport) {
@@ -57,6 +57,7 @@ const updateTaskReport = async ({taskId, updateTaskCredentials}) => {
         }
     }
     catch (error) {
+        console.log(error,"updateTaskReport error")
         return {
             status: false,
             message: error

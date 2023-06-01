@@ -218,7 +218,7 @@ exports.getProjectTask = async (req, res, next) => {
     try {
         id = req.params.id
 
-        const tasks = await Task.find({ project: id }).populate('employee').populate('softwareCompany').sort({ createdAt: -1 })
+        const tasks = await Task.find({ project: id }).populate('employee').populate('softwareCompany').populate('createdBy').sort({ createdAt: -1 })
 
         const completeTasks = await Task.find({
             project: id,
@@ -231,7 +231,7 @@ exports.getProjectTask = async (req, res, next) => {
         }).populate('employee').populate('softwareCompany').sort({ createdAt: -1 });
 
 
-        if (!tasks || !completeTasks  || !IncompleteTask) {
+        if (!tasks || !completeTasks || !IncompleteTask) {
             res.status(404).send({
                 message: 'Tasks Not Found',
             })
@@ -285,7 +285,7 @@ exports.updateTaskAgileCycle = async (req, res, next) => {
             isCompleted
         }
 
-        console.log(_id, updateTaskCredentials, "taskCredentials")
+        // console.log(_id, updateTaskCredentials, "taskCredentials")
         let isUpdateTaskReport = await updateTaskReport({ taskId: id, updateTaskCredentials })
         if (isUpdateTaskReport.status) {
 
@@ -321,7 +321,7 @@ exports.updateTaskAgileCycle = async (req, res, next) => {
                 message: "Failed to Update Task Report",
             })
         }
-        console.log(isUpdateTaskReport, "isUpdateTaskReport")
+        // console.log(isUpdateTaskReport, "isUpdateTaskReport")
     }
     catch (err) {
         res.status(500).json({
@@ -672,6 +672,72 @@ exports.getProjectTaskTree = async (req, res, next) => {
         res.status(500).json({
             success: false,
             message: 'Auth Failed',
+            error: err
+        })
+    }
+}
+
+exports.extendDeadline = async (req, res, next) => {
+    try {
+        const taskId = req.params.id;
+        const { deadlineExtend } = req.body;
+
+        const task = await Task.findById(taskId);
+
+
+        if (!task) {
+            return res.status(404).json({
+                status: false,
+                error: 'Task not found'
+            });
+        }
+        else {
+            let { _id, name, description, employee, deadlineStart, deadlineEnd, dependUpon, agileCycle } = task;
+            const isCompleted = agileCycle.toLowerCase() === "deploy" || agileCycle.toLowerCase() === "maintenance"
+
+            let updateTaskCredentials = {
+                name,
+                description,
+                employee,
+                deadlineStart,
+                deadlineEnd,
+                dependUpon,
+                agileCycle,
+                isCompleted,
+                deadlineExtend: deadlineExtend
+            }
+
+            let extendDeadlineUpdate = await updateTaskReport({ taskId: taskId, updateTaskCredentials })
+            // console.log(extendDeadlineUpdate, "extendDeadlineUpdate")
+
+            if (extendDeadlineUpdate.status) {
+                // console.log(extendDeadlineUpdate, "extendDeadlineUpdate")
+                // Update the deadlineExtend field
+                task.deadlineExtend = deadlineExtend;
+
+                // Save the updated task
+                const updatedTask = await task.save();
+
+
+                res.status(200).json({
+                    status: true,
+                    message: `Task Deadline Extended`,
+                    task: updatedTask
+                })
+            }
+            else {
+                res.status(500).json({
+                    success: false,
+                    message: "Failed to Update Task Deadline",
+                })
+            }
+        }
+    }
+    catch (err) {
+        // console.log(err, "extendDeadlineUpdate last err")
+        res.status(500).json({
+            success: false,
+            message: 'Request Failed',
             error: err
         })
     }
