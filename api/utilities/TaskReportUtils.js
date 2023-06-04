@@ -31,15 +31,35 @@ const createTaskReport = async ({ taskId, updates, project }) => {
 }
 
 
-const updateTaskReport = async ({taskId, updateTaskCredentials}) => {
+const updateTaskReport = async ({ taskId, updateTaskCredentials }) => {
     try {
         // console.log(taskId, updateTaskCredentials,"updateTaskCredentials")
         const taskReport = await TaskReport.findOne({ taskId });
+        const task = await Task.findById(taskId);
 
         if (!taskReport) {
+            if (task) {
+                let { _id, project } = task;
+                let isCreateTaskReport = await createTaskReport({ taskId: taskId, updates: updateTaskCredentials, project: project })
+
+                if (isCreateTaskReport.status) {
+
+                    return ({
+                        status: true,
+                        message: 'Task Report Created Sucessfully',
+                    })
+                }
+                else {
+                    return ({
+                        status: false,
+                        message: 'Task report not found',
+                    })
+                }
+
+            }
             return {
                 status: false,
-                message: 'Task report not found'
+                message: 'Task  not found'
             }
         }
 
@@ -50,14 +70,16 @@ const updateTaskReport = async ({taskId, updateTaskCredentials}) => {
         taskReport.updates.push(update);
 
         const updatedTaskReport = await taskReport.save();
+        // console.log(updatedTaskReport,"updatedTaskReport")
 
         return {
             status: true,
-            taskReport: updatedTaskReport
+            taskReport: updatedTaskReport,
+            message: 'Task report Updated'
         }
     }
     catch (error) {
-        console.log(error,"updateTaskReport error")
+        console.log(error, "updateTaskReport error")
         return {
             status: false,
             message: error

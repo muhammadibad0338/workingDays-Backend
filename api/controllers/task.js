@@ -3,6 +3,7 @@ const Team = require('../models/team')
 const User = require('../models/user')
 const Project = require('../models/project')
 const Task = require('../models/task')
+const TaskReport = require('../models/taskReports')
 
 const { sendTaskCreateEmail, areTasksInSameProject, checkDependUpon } = require("../utilities/TaksUtils")
 const { createTaskReport, updateTaskReport } = require("../utilities/TaskReportUtils")
@@ -710,10 +711,8 @@ exports.extendDeadline = async (req, res, next) => {
             }
 
             let extendDeadlineUpdate = await updateTaskReport({ taskId: taskId, updateTaskCredentials })
-            // console.log(extendDeadlineUpdate, "extendDeadlineUpdate")
 
             if (extendDeadlineUpdate.status) {
-                // console.log(extendDeadlineUpdate, "extendDeadlineUpdate")
                 // Update the deadlineExtend field
                 task.deadlineExtend = deadlineExtend;
 
@@ -730,13 +729,12 @@ exports.extendDeadline = async (req, res, next) => {
             else {
                 res.status(500).json({
                     success: false,
-                    message: "Failed to Update Task Deadline",
+                    message: extendDeadlineUpdate.message,
                 })
             }
         }
     }
     catch (err) {
-        // console.log(err, "extendDeadlineUpdate last err")
         res.status(500).json({
             success: false,
             message: 'Request Failed',
@@ -744,3 +742,184 @@ exports.extendDeadline = async (req, res, next) => {
         })
     }
 }
+
+
+// exports.getProjectTaskReports = async (req, res, next) => {
+//     try {
+//         const projectId = req.params.projectId;
+//         const employeeId = req.query.employeeId;
+
+//         const query = { project: projectId };
+//         if (employeeId) {
+//             query.employee = employeeId;
+//         }
+
+//         const tasks = await Task.find(query)
+//             .select('_id employee name agileCycle createdAt updatedAt deadlineStart deadlineEnd')
+//             .populate({
+//                 path: 'employee',
+//                 select: '_id name',
+//             })
+//             .sort({ createdAt: -1 });
+
+//         if (tasks.length === 0) {
+//             return res.status(404).json({
+//                 message: 'Tasks not found for the given project and employee',
+//             });
+//         }
+
+//         const updatedTasks = tasks.map(task => {
+//             const isComplete = task.agileCycle === 'Maintenance' || task.agileCycle === 'Deploy';
+//             return { ...task._doc, isComplete };
+//         });
+
+//         res.status(200).json({
+//             tasks: updatedTasks,
+//         });
+//     } catch (error) {
+//         console.error(error);
+//         res.status(500).json({
+//             message: 'Failed to retrieve tasks',
+//             error: error.message,
+//         });
+//     }
+// };
+
+
+
+exports.getProjectTaskReports = async (req, res, next) => {
+    try {
+        const projectId = req.params.projectId;
+        const employeeId = req.query.employeeId;
+
+
+
+        const query = { project: projectId };
+        if (employeeId) {
+            query.employee = employeeId;
+        }
+
+        const tasks = await Task.find(query)
+            .select('_id employee name agileCycle createdAt updatedAt deadlineStart deadlineEnd')
+            .populate({
+                path: 'employee',
+                select: '_id name',
+            })
+            .sort({ createdAt: -1 });
+
+        if (tasks.length === 0) {
+            return res.status(404).json({
+                message: 'Tasks not found for the given project and employee',
+            });
+        }
+
+        const updatedTasks = [];
+        const currentDate = new Date();
+
+        for (const task of tasks) {
+            const isComplete = task.agileCycle === 'Maintenance' || task.agileCycle === 'Deploy';
+            const isLate = !isComplete && task.deadlineEnd < currentDate;
+            const deadline = new Date(task.deadlineEnd);
+
+            let latestTaskReport = null;
+            if (isComplete) {
+                const taskReport = await TaskReport.findOne({ taskId: task._id })
+                    .sort({ 'updates.createdAt': -1 })
+                    .populate({
+                        path: 'updates',
+                        match: { agileCycle: 'Deploy' },
+                        options: { limit: 1 },
+                        populate: {
+                            path: 'employee',
+                            select: '_id name',
+                        },
+                    });
+
+                if (taskReport) {
+                    latestTaskReport = taskReport.updates[0];
+                }
+            }
+
+            const updatedTask = {
+                ...task._doc,
+                isComplete,
+                isLate,
+                daysLate: 0
+            };
+
+            // if (isComplete && latestTaskReport) {
+            //     // updatedTask.latestTaskReport = latestTaskReport;
+
+            //     // Checking Task is Completed but if Is Late or Not
+            //     if (task.deadlineEnd < latestTaskReport.createdAt) {
+            //         updatedTask.isLate = true
+
+            //         // Caluclating Late Days
+            //         // const deadline = new Date(task.deadlineEnd);
+            //         const reportCreated = new Date(latestTaskReport.createdAt);
+
+            //         const timeDiff = reportCreated.getTime() - deadline.getTime();
+            //         const daysLate = Math.ceil(timeDiff / (1000 * 60 * 60 * 24));
+
+            //         updatedTask.daysLate = isLate ? daysLate : 0 // Include daysLate only if the task is late
+
+            //     }
+            // }
+            if (isComplete && latestTaskReport) {
+                // updatedTask.latestTaskReport = latestTaskReport;
+
+                // Checking if the task is completed but late
+                if (task.deadlineEnd < latestTaskReport.createdAt) {
+                    updatedTask.isLate = true;
+
+                    const deadline = new Date(task.deadlineEnd.getFullYear(), task.deadlineEnd.getMonth(), task.deadlineEnd.getDate())
+                    const reportCreated = new Date(latestTaskReport.createdAt.getFullYear(), latestTaskReport.createdAt.getMonth(), latestTaskReport.createdAt.getDate())
+
+                    const timeDiff = reportCreated.getTime() - deadline.getTime();
+                    const daysLate = Math.ceil(timeDiff / (1000 * 60 * 60 * 24));
+
+                    updatedTask.daysLate = daysLate;
+                }
+            }
+
+
+
+            // IF Task is InComplete check while Deadline is remaining or not
+            //      IF Deadline is remaing then Task is not Late
+            //      IF Deadline is Passes then Then Task is Late
+
+            if (!isComplete) {
+                // Set the time of day for currentDate to 00:00:00
+                const currentDateStartOfDay = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate());
+
+                // Set the time of day for deadline to 00:00:00
+                const deadlineStartOfDay = new Date(deadline.getFullYear(), deadline.getMonth(), deadline.getDate());
+
+                if (currentDateStartOfDay > deadlineStartOfDay) {
+                    updatedTask.isLate = true;
+                    const timeDiff = currentDateStartOfDay.getTime() - deadlineStartOfDay.getTime();
+                    const daysLate = Math.ceil(timeDiff / (1000 * 60 * 60 * 24));
+                    updatedTask.daysLate = daysLate;
+                } else {
+                    updatedTask.isLate = false;
+                }
+            }
+
+
+
+
+
+            updatedTasks.push(updatedTask);
+        }
+
+        res.status(200).json({
+            tasks: updatedTasks,
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({
+            message: 'Failed to retrieve tasks',
+            error: error.message,
+        });
+    }
+};

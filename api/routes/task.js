@@ -15,9 +15,12 @@ router.delete('/deleteTaskDependency/:id', taskController.deleteTaskDependency)
 router.delete('/deleteTask/:id', taskController.deleteTask)
 router.get('/projectTaskTree/:id', taskController.getProjectTaskTree)
 
+router.get('/projectTasksReports/:projectId', taskController.getProjectTaskReports)
+
 // TaskReport
 router.get('/taskReport-taskId/:taskId', taskReportController.getTaskReportByTaskId)
 router.get('/taskReports-projectId/:projectId', taskReportController.getTaskReportByTaskId)
+
 
 
 module.exports = router;
