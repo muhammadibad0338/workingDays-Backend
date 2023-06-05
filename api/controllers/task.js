@@ -792,6 +792,12 @@ exports.getProjectTaskReports = async (req, res, next) => {
         const projectId = req.params.projectId;
         const employeeId = req.query.employeeId;
 
+        let completeOnTime = 0;
+        let completedLate = 0;
+        let InCompleteOngoing = 0;
+        let InCompleteLate = 0;
+        let TotalTask = 0;
+
 
 
         const query = { project: projectId };
@@ -847,29 +853,15 @@ exports.getProjectTaskReports = async (req, res, next) => {
                 daysLate: 0
             };
 
-            // if (isComplete && latestTaskReport) {
-            //     // updatedTask.latestTaskReport = latestTaskReport;
 
-            //     // Checking Task is Completed but if Is Late or Not
-            //     if (task.deadlineEnd < latestTaskReport.createdAt) {
-            //         updatedTask.isLate = true
-
-            //         // Caluclating Late Days
-            //         // const deadline = new Date(task.deadlineEnd);
-            //         const reportCreated = new Date(latestTaskReport.createdAt);
-
-            //         const timeDiff = reportCreated.getTime() - deadline.getTime();
-            //         const daysLate = Math.ceil(timeDiff / (1000 * 60 * 60 * 24));
-
-            //         updatedTask.daysLate = isLate ? daysLate : 0 // Include daysLate only if the task is late
-
-            //     }
-            // }
             if (isComplete && latestTaskReport) {
                 // updatedTask.latestTaskReport = latestTaskReport;
 
+
                 // Checking if the task is completed but late
                 if (task.deadlineEnd < latestTaskReport.createdAt) {
+                    completedLate += 1
+
                     updatedTask.isLate = true;
 
                     const deadline = new Date(task.deadlineEnd.getFullYear(), task.deadlineEnd.getMonth(), task.deadlineEnd.getDate())
@@ -879,6 +871,9 @@ exports.getProjectTaskReports = async (req, res, next) => {
                     const daysLate = Math.ceil(timeDiff / (1000 * 60 * 60 * 24));
 
                     updatedTask.daysLate = daysLate;
+                }
+                else {
+                    completeOnTime += 1
                 }
             }
 
@@ -896,15 +891,18 @@ exports.getProjectTaskReports = async (req, res, next) => {
                 const deadlineStartOfDay = new Date(deadline.getFullYear(), deadline.getMonth(), deadline.getDate());
 
                 if (currentDateStartOfDay > deadlineStartOfDay) {
+                    InCompleteLate += 1
+
                     updatedTask.isLate = true;
                     const timeDiff = currentDateStartOfDay.getTime() - deadlineStartOfDay.getTime();
                     const daysLate = Math.ceil(timeDiff / (1000 * 60 * 60 * 24));
                     updatedTask.daysLate = daysLate;
                 } else {
                     updatedTask.isLate = false;
+                    InCompleteOngoing += 1
                 }
             }
-
+            TotalTask += 1
 
 
 
@@ -914,6 +912,14 @@ exports.getProjectTaskReports = async (req, res, next) => {
 
         res.status(200).json({
             tasks: updatedTasks,
+            tasksStatus: {
+                completeOnTime,
+                completedLate,
+                InCompleteOngoing,
+                InCompleteLate,
+                TotalTask
+
+            }
         });
     } catch (error) {
         console.error(error);
