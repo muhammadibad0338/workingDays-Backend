@@ -15,7 +15,7 @@ exports.sendRequest = async (req, res, next) => {
 
         const now = new Date();
 
-        if (employee.role !== "Employee" || softwareCompany.role !== "softwareCompany") {
+        if (employee.role !== "Employee" || ![0, 1, 2].includes(softwareCompany.level)) {
             return res.status(500).send({
                 message: 'User are not permit to perfome send Request Action'
             })
