@@ -219,17 +219,17 @@ exports.getProjectTask = async (req, res, next) => {
     try {
         id = req.params.id
 
-        const tasks = await Task.find({ project: id }).populate('employee').populate('softwareCompany').populate('createdBy').sort({ createdAt: -1 })
+        const tasks = await Task.find({ project: id }).populate('employee').populate('softwareCompany').populate('createdBy').populate({ path: 'dependUpon', select: '_id name' }).sort({ createdAt: -1 })
 
         const completeTasks = await Task.find({
             project: id,
             $or: [{ agileCycle: 'Deploy' }, { agileCycle: 'Maintenance' }]
-        }).populate('employee').populate('softwareCompany').sort({ createdAt: -1 });
+        }).populate('employee').populate('softwareCompany').populate({ path: 'dependUpon', select: '_id name' }).sort({ createdAt: -1 });
 
         const IncompleteTask = await Task.find({
             project: id,
             agileCycle: { $nin: ['Deploy', 'Maintenance'] }
-        }).populate('employee').populate('softwareCompany').sort({ createdAt: -1 });
+        }).populate('employee').populate('softwareCompany').populate({ path: 'dependUpon', select: '_id name' }).sort({ createdAt: -1 });
 
 
         if (!tasks || !completeTasks || !IncompleteTask) {
@@ -912,14 +912,13 @@ exports.getProjectTaskReports = async (req, res, next) => {
 
         res.status(200).json({
             tasks: updatedTasks,
-            tasksStatus: {
+            tasksStatus: [
                 completeOnTime,
                 completedLate,
                 InCompleteOngoing,
                 InCompleteLate,
-                TotalTask
-
-            }
+                // TotalTask
+            ]
         });
     } catch (error) {
         console.error(error);
